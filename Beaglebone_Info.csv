@@ -1,0 +1,24 @@
+Beagle Bone Black Programming Reference Guide,,,
+Arun Aruljothi,,,
+,,,
+PRU AVAILABLE PIN REGISTERS,,,
+register,operation,,
+r30,output,,
+r31 ,input ,,
+,,,
+PIN REFERENCE AND ASSIGNMENT,,,
+BBB Port,Assign,Register_Bit,Name
+P8.45,d0,r31_0,PRU1_0
+P8.46,d1,r31_1,PRU1_1
+P8.43,d2,r31_2,PRU1_2
+P8.44,d3,r31_3,PRU1_3
+P8.41,d4,r31_4,PRU1_4
+P8.42,d5,r31_5,PRU1_5
+P8.39,d6,r31_6,PRU1_6
+P8.40,d7,r31_7,PRU1_7
+P8.27,NOT USED,NOT USED,PRU1_8
+P8.29,CNVST,r30_9,PRU1_9
+P8.28,BUSY,r30_10,PRU1_10
+P8.30,BYTESWAP,r30_11,PRU1_11
+P8.21,NOT USED,NOT USED,PRU1_12
+P8.20,NOT USED,NOT USED,PRU1_13
