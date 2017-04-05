@@ -1,18 +1,4 @@
-// pru code v0.1
-//
-// BBB Schematic  BBB port Assign   Bit
-// -------------  -------- ------   ------------
-// LCD_DATA0      P8.45    d0       PRU1_R31_0
-// LCD_DATA1      P8.46    d1       PRU1_R31_1
-// LCD_DATA2      P8.43    d2       PRU1_R31_2
-// LCD_DATA3      P8.44    d3       PRU1_R31_3
-// LCD_DATA4      P8.41    d4       PRU1_R31_4
-// LCD_DATA5      P8.42    d5       PRU1_R31_5
-// LCD_DATA6      P8.39    d6       PRU1_R31_6
-// LCD_DATA7      P8.40    d7       PRU1_R31_7
-// LCD_DATA7      P8.29    CNVST    PRU1_R31_9
-// LCD_PCLK       P8.28    BUSY     PRU1_R31_10
-// LCD_DE         P8.30    BYTESWP  PRU1_R30_11
+// delay tester
 
 .origin 0
 .entrypoint START
@@ -110,46 +96,15 @@ CMDLOOP:
 		// ok, we have an instruction. Assume it means begin capture
 		LED_ON
 
-SETUP:
-		CLR r30.t11 // byteswap set to low
-		SET r30.t9 // cnvst set high
-		WBC r31.t10 // wait for busy to be low
-		DEL //delay before capture loop
+		MOV r4, 500000
 
-CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
-		UDEL
-		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
-		DEL //delay
-		MOV r1, 2 // repeat twice counter
-
-READSINGLE:
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		//AND r1, r2, r4 // Were just interested in a portion of r31 (i.e. 8 bits)
-		// we can now write it to RAM (address in r6)
-		SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
-		ADD r6, r6, 4 // increment DDR address by 4 bytes
-		// Check to see if we still need to read more data
-		SUB r7, r7, 1 // subtract read counter
-		SUB r1, r1, 1 // subtract second read
-		SET r30.t11 // set byteswap high
-		UDEL // delay for byteswap
-		QBNE READSINGLE, r1, 0 // loop to read both bytes
-		CLR r30.t11 //clear byteswap low
-		UDEL
-		QBNE CAPTURELOOP, r7, 0 // loop if weve not finished
-
-CLEANUP:
-		SET r30.t11	// disable the data bus
-
-		// were done. Signal to the application
-		LED_OFF
-		MOV r1, 1
-		SBCO r1, CONST_PRUSHAREDRAM, 0, 4 // Put contents of r1 into shared RAM
-		JMP EXIT // finished, Quit
+LOOPDEL:
+		SET r30.t11 // set high
+		DEL
+		CLR r30.t11 // set low
+		DEL
+		SUB r4, r4, 1
+		QBEQ LOOPDEL, r4, 0
 
 EXIT:
     // Send notification to Host for program completion
