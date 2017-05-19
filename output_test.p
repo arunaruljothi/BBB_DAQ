@@ -45,7 +45,7 @@ UDEL1:
 
 .macro DEL
 DEL:
-		MOV r1, 50000 // generic delay
+		MOV r1, 10 // generic delay
 DEL1:
 		SUB r1, r1, 1
 		QBNE DEL1, r1, 0 // loop if weve not finished
@@ -55,7 +55,6 @@ DEL1:
 
 
 START:
-
     // Enable OCP master port
     LBCO      r0, CONST_PRUCFG, 4, 4
     CLR     r0, r0, 4         // Clear SYSCFG[STANDBY_INIT] to enable OCP master port
@@ -78,8 +77,7 @@ START:
 
     //Store values from read from the DDR memory into PRU shared RAM
     //SBCO      r0, CONST_PRUSHAREDRAM, 0, 12
-
-		LED_OFF
+		DEL
 
 
 START1:
@@ -94,17 +92,21 @@ CMDLOOP:
 		QBEQ CMDLOOP, r12, 0 // loop until we get an instruction
 		QBEQ CMDLOOP, r12, 1 // loop until we get an instruction
 		// ok, we have an instruction. Assume it means begin capture
-		LED_ON
 
-		MOV r4, 500000
+		MOV r4, RECORDS
 
 LOOPDEL:
 		SET r30.t11 // set high
+		CLR r30.t09
 		DEL
 		CLR r30.t11 // set low
+		SET r30.t09
 		DEL
 		SUB r4, r4, 1
-		QBEQ LOOPDEL, r4, 0
+		QBNE LOOPDEL, r4, 1
+		MOV r1, 1
+		CLR r30.t11 // set low
+		SBCO r1, CONST_PRUSHAREDRAM, 0, 4 // Put contents of r1 into shared RAM
 
 EXIT:
     // Send notification to Host for program completion
@@ -114,5 +116,7 @@ EXIT:
     HALT
 
 ERR:
+	CLR r30, r30, 11 // set low
 	LED_ON
+	HALT
 	JMP ERR

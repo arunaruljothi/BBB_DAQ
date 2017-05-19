@@ -1,4 +1,4 @@
-// pru code v0.1 (final program)
+// pru code v0.1 (testoutput into c program)
 //
 // BBB Schematic  BBB port Assign   Bit
 // -------------  -------- ------   ------------
@@ -65,6 +65,14 @@ DEL1:
 		QBNE DEL1, r1, 0 // loop if weve not finished
 .endm
 
+.macro MDEL
+DEL:
+		MOV r1, 5000000 // generic delay
+DEL1:
+		SUB r1, r1, 1
+		QBNE DEL1, r1, 0 // loop if weve not finished
+.endm
+
 
 
 
@@ -116,38 +124,26 @@ SETUP:
 		WBC r31.t10 // wait for busy to be low
 		DEL //delay before capture loop
 
-CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
+READLOOP:
+		CLR r30.t9 // Set falling edge on cnvst
 		UDEL
-		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
-		DEL //delay
-		MOV r1, 2 // repeat twice counter
-
-READSINGLE:
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		//AND r1, r2, r4 // Were just interested in a portion of r31 (i.e. 8 bits)
-		// we can now write it to RAM (address in r6)
-		SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
-		ADD r6, r6, 4 // increment DDR address by 4 bytes
-		// Check to see if we still need to read more data
-		SUB r7, r7, 1 // subtract read counter
-		SUB r1, r1, 1 // subtract second read
-		SET r30.t11 // set byteswap high
-		UDEL // delay for byteswap
-		QBNE READSINGLE, r1, 0 // loop to read both bytes
-		CLR r30.t11 //clear byteswap low
-		UDEL
-		QBNE CAPTURELOOP, r7, 0 // loop if weve not finished
+		WBC r31.t10// wait for busy to be low
+		MOV r2, r31 // read wait
+		MOV r2, r31
+		MOV r2, r31
+		AND r1, r2, r4 // mask for 8 bits and put it in r1
+		SBCO r1, CONST_PRUSHAREDRAM, 0, 8
+		SET r30.t9 //wait to read next
+		MDEL //wait lots
+		SUB r7, r7, 1 // subtract one from the records
+		QBNE READLOOP, r7, 0 //loop till enough records taken.
 
 CLEANUP:
-		SET r30.t11	// disable the data bus
+		SET r30.t9 // Set cnvst high again
 		// were done. Signal to the application
 		LED_OFF
 		MOV r1, 1
-		SBCO r1, CONST_PRUSHAREDRAM, 0, 4 // Put contents of r1 into shared RAM
+		SBCO r1, CONST_PRUSHAREDRAM, 0, 8 // Put contents of r1 into shared RAM
 		JMP EXIT // finished, Quit
 
 EXIT:

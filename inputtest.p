@@ -1,18 +1,4 @@
-// pru code v0.1 (final program)
-//
-// BBB Schematic  BBB port Assign   Bit
-// -------------  -------- ------   ------------
-// LCD_DATA0      P8.45    d0       PRU1_R31_0
-// LCD_DATA1      P8.46    d1       PRU1_R31_1
-// LCD_DATA2      P8.43    d2       PRU1_R31_2
-// LCD_DATA3      P8.44    d3       PRU1_R31_3
-// LCD_DATA4      P8.41    d4       PRU1_R31_4
-// LCD_DATA5      P8.42    d5       PRU1_R31_5
-// LCD_DATA6      P8.39    d6       PRU1_R31_6
-// LCD_DATA7      P8.40    d7       PRU1_R31_7
-// LCD_DATA7      P8.29    CNVST    PRU1_R30_9
-// LCD_PCLK       P8.28    BUSY     PRU1_R31_10
-// LCD_DE         P8.30    BYTESWP  PRU1_R30_11
+// delay tester
 
 .origin 0
 .entrypoint START
@@ -33,7 +19,7 @@
 // Memory location where to store the data to be acquired:
 #define ACQRAM 0x00010004
 // Length of acquisition:
-#define RECORDS 200
+#define RECORDS 20000000
 
 // *** LED routines, so that LED USR0 can be used for some simple debugging
 // *** Affects: r2, r3
@@ -51,7 +37,7 @@
 
 .macro UDEL
 UDEL:
-		MOV r14, 50 // byteswap delay
+		MOV r14, 500 // byteswap delay
 UDEL1:
 		SUB r14, r14, 1
 		QBNE UDEL1, r14, 0 // loop if weve not finished
@@ -59,7 +45,7 @@ UDEL1:
 
 .macro DEL
 DEL:
-		MOV r1, 500 // generic delay
+		MOV r1, 10000 // generic delay
 DEL1:
 		SUB r1, r1, 1
 		QBNE DEL1, r1, 0 // loop if weve not finished
@@ -69,7 +55,6 @@ DEL1:
 
 
 START:
-
     // Enable OCP master port
     LBCO      r0, CONST_PRUCFG, 4, 4
     CLR     r0, r0, 4         // Clear SYSCFG[STANDBY_INIT] to enable OCP master port
@@ -92,8 +77,7 @@ START:
 
     //Store values from read from the DDR memory into PRU shared RAM
     //SBCO      r0, CONST_PRUSHAREDRAM, 0, 12
-
-		LED_OFF
+		DEL
 
 
 START1:
@@ -108,51 +92,25 @@ CMDLOOP:
 		QBEQ CMDLOOP, r12, 0 // loop until we get an instruction
 		QBEQ CMDLOOP, r12, 1 // loop until we get an instruction
 		// ok, we have an instruction. Assume it means begin capture
-		LED_ON
 
-SETUP:
-		CLR r30.t11 // byteswap set to low
-		SET r30.t9 // cnvst set high
-		WBC r31.t10 // wait for busy to be low
-		DEL //delay before capture loop
 
-CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
-		UDEL
-		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
-		DEL //delay
-		MOV r1, 2 // repeat twice counter
-
-READSINGLE:
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		//AND r1, r2, r4 // Were just interested in a portion of r31 (i.e. 8 bits)
-		// we can now write it to RAM (address in r6)
-		SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
-		ADD r6, r6, 4 // increment DDR address by 4 bytes
-		// Check to see if we still need to read more data
-		SUB r7, r7, 1 // subtract read counter
-		SUB r1, r1, 1 // subtract second read
-		SET r30.t11 // set byteswap high
-		UDEL // delay for byteswap
-		QBNE READSINGLE, r1, 0 // loop to read both bytes
-		CLR r30.t11 //clear byteswap low
-		UDEL
-		QBNE CAPTURELOOP, r7, 0 // loop if weve not finished
-
-CLEANUP:
-		SET r30.t11	// disable the data bus
-		// were done. Signal to the application
-		LED_OFF
+LOOPDEL:
+		WBS r31.t0
+		WBS r31.t2
+		WBS r31.t4
+		WBS r31.t6
+		WBS r31.t1
+		WBS r31.t3
+		WBS r31.t5
+		WBS r31.t7
+		WBS r31.t10
 		MOV r1, 1
 		SBCO r1, CONST_PRUSHAREDRAM, 0, 4 // Put contents of r1 into shared RAM
-		JMP EXIT // finished, Quit
 
 EXIT:
     // Send notification to Host for program completion
     MOV       r31.b0, PRU1_ARM_INTERRUPT+16
+
     // Halt the processor
     HALT
 

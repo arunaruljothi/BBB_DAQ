@@ -14,11 +14,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include <i2cfunc.h>
 
 // Driver header file
 #include "prussdrv.h"
-#include <pruss_intc_mapping.h>	 
+#include <pruss_intc_mapping.h>
 #include "adc.h"
 
 
@@ -74,9 +73,9 @@ void dumpdata(void)
   unsigned char rgb24[4];
   unsigned char v1, v2;
   rgb24[3]=0;
-	
 
-	
+
+
 	DDR_regaddr = ddrMem + OFFSET_DDR;
 	valp=(unsigned short int*)&sharedMem_int[OFFSET_SHAREDRAM+1];
 	for (x=0; x<2000; x++)
@@ -90,7 +89,7 @@ void dumpdata(void)
 	}
 	printf("\n");
 
-	
+
 }
 
 
@@ -98,16 +97,17 @@ int main (void)
 {
     unsigned int ret;
     int i;
+		int count;
     void *DDR_paramaddr;
     void *DDR_ackaddr;
     int fin;
     char fname_new[255];
-    
+
     tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
-   
+
     printf("\nINFO: Starting %s example.\r\n", "ADC");
     /* Initialize the PRU */
-    prussdrv_init ();		
+    prussdrv_init ();
 
     /* Open PRU Interrupt */
     ret = prussdrv_open(PRU_EVTOUT_1);
@@ -116,60 +116,70 @@ int main (void)
         printf("prussdrv_open open failed\n");
         return (ret);
     }
-    
+
     /* Get the interrupt initialized */
     prussdrv_pruintc_init(&pruss_intc_initdata);
-    
+
     // Open file
-    outfile=fopen("data.csv", "w");
+    //outfile=fopen("data.csv", "w"); // change back
 
     /* Initialize example */
     printf("\tINFO: Initializing example.\r\n");
     LOCAL_exampleInit(PRU_NUM);
-    
+
     /* Execute example on PRU */
     printf("\tINFO: Executing example.\r\n");
-    
+
     DDR_paramaddr = ddrMem + OFFSET_DDR - 8;
     DDR_ackaddr = ddrMem + OFFSET_DDR - 4;
-    
+
     sharedMem_int[OFFSET_SHAREDRAM]=0; // set to zero means no command
     // Execute program
     prussdrv_exec_program (PRU_NUM, "./prucode_adc.bin");
-		printf("Executing. \n");
+		printf("Initializing. \n");
 		sleep(1);
 		sharedMem_int[OFFSET_SHAREDRAM]=(unsigned int)2; // set to 2 means perform capture
-		
+
 		// give some time for the PRU code to execute
 		sleep(1);
-		printf("Waiting for ack (curr=%d). \n", sharedMem_int[OFFSET_SHAREDRAM]);
+		printf("Executed: Waiting for ack (curr=%d). \n", sharedMem_int[OFFSET_SHAREDRAM]);
 		fin=0;
+		count = sharedMem_int[OFFSET_SHAREDRAM];
 		do
 		{
+			if (sharedMem_int[OFFSET_SHAREDRAM] != count){
+				printf("\nOutput number: =%d", sharedMem_int[OFFSET_SHAREDRAM]);
+				count = sharedMem_int[OFFSET_SHAREDRAM];
+			}
 			if ( sharedMem_int[OFFSET_SHAREDRAM] == 1 )
 			{
 				// we have received the ack!
-				dumpdata(); // Store to file
+				//dumpdata(); // Store to file // change back
 				sharedMem_int[OFFSET_SHAREDRAM] = 0;
 				fin=1;
 				printf("Ack\n");
 			}
+			count++;
+			if (count > 50000000){
+				printf("Exeeded allowed limit\n" );
+				break;
+			}
 		} while(!fin);
 
-		
-		
+
+
     //prussdrv_pru_wait_event (PRU_EVTOUT_1);
     printf("Done\n");
     	//prussdrv_pru_clear_event (PRU1_ARM_INTERRUPT);
 
- 		   	
 
-		fclose(outfile);
 
-    
-    
+		//fclose(outfile); // change back
+
+
+
     /* Disable PRU and close memory mapping*/
-    prussdrv_pru_disable(PRU_NUM); 
+    prussdrv_pru_disable(PRU_NUM);
     prussdrv_exit ();
     munmap(ddrMem, 0x0FFFFFFF);
     close(mem_fd);
@@ -183,8 +193,8 @@ int main (void)
 
 static int LOCAL_exampleInit (  )
 {
-    void *DDR_regaddr1, *DDR_regaddr2, *DDR_regaddr3;	
-    
+    void *DDR_regaddr1, *DDR_regaddr2, *DDR_regaddr3;
+
     prussdrv_map_prumem(PRUSS1_SHARED_DATARAM, &sharedMem);
     sharedMem_int = (unsigned int*) sharedMem;
 
@@ -193,7 +203,7 @@ static int LOCAL_exampleInit (  )
     if (mem_fd < 0) {
         printf("Failed to open /dev/mem (%s)\n", strerror(errno));
         return -1;
-    }	
+    }
 
     /* map the DDR memory */
     ddrMem = mmap(0, 0x0FFFFFFF, PROT_WRITE | PROT_READ, MAP_SHARED, mem_fd, DDR_BASEADDR);
@@ -202,8 +212,7 @@ static int LOCAL_exampleInit (  )
         close(mem_fd);
         return -1;
     }
-    
+
 
     return(0);
 }
-

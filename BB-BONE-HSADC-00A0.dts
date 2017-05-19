@@ -23,7 +23,7 @@
     "P8.29",
     "P8.28",
     "P8.30";
-  
+
   fragment@0 {
     target = <&am33xx_pinmux>;
     __overlay__ {
@@ -37,9 +37,9 @@
           0xb4 0x2e
           0xb8 0x2e
           0xbc 0x2e
-          0xe4 0x15
+          0xe4 0x05
           0xe8 0x2e
-          0xec 0x15
+          0xec 0x05
           >;
       };
     };
