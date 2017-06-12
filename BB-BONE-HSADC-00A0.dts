@@ -49,7 +49,7 @@
     target = <&ocp>;
     __overlay__ {
       test_helper: helper {
-        compatible = "bone-pinmux-helper";
+        compatible = "bone-pinmux-hcp BB-BONE-HSADC-00A0.dtbo /lib/firmware/elper";
         pinctrl-names = "default";
         pinctrl-0 = <&mygpio>;
         status = "okay";

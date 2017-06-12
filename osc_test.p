@@ -1,4 +1,4 @@
-// pru code v0.1 (final program)
+// pru code v0.1 (testoutput into c program)
 //
 // BBB Schematic  BBB port Assign   Bit
 // -------------  -------- ------   ------------
@@ -33,7 +33,7 @@
 // Memory location where to store the data to be acquired:
 #define ACQRAM 0x00010004
 // Length of acquisition:
-#define RECORDS 200
+#define RECORDS 20000000
 
 // *** LED routines, so that LED USR0 can be used for some simple debugging
 // *** Affects: r2, r3
@@ -60,6 +60,14 @@ UDEL1:
 .macro DEL
 DEL:
 		MOV r1, 500 // generic delay
+DEL1:
+		SUB r1, r1, 1
+		QBNE DEL1, r1, 0 // loop if weve not finished
+.endm
+
+.macro MDEL
+DEL:
+		MOV r1, 5000000 // generic delay
 DEL1:
 		SUB r1, r1, 1
 		QBNE DEL1, r1, 0 // loop if weve not finished
@@ -110,44 +118,19 @@ CMDLOOP:
 		// ok, we have an instruction. Assume it means begin capture
 		LED_ON
 
-SETUP:
-		CLR r30.t11 // byteswap set to low
-		SET r30.t9 // cnvst set high
-		WBC r31.t10 // wait for busy to be low
-		DEL //delay before capture loop
+RUN:
+		WBC r31.t10 // wait for input to be low
+	  CLR r30.t9 // set out low
+		WBS r31.t10 // wait for input to be hight
+		SET r30.t9 // set out high
+		SUB r7, r7, 1 // sub one from records
+		QBNE RUN, r7, 0 // loop back to run
 
-CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
-		UDEL
-		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
-		DEL //delay
-		MOV r1, 2 // repeat twice counter
-
-READSINGLE:
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
-		//AND r1, r2, r4 // Were just interested in a portion of r31 (i.e. 8 bits)
-		// we can now write it to RAM (address in r6)
-		//SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
-		//ADD r6, r6, 4 // increment DDR address by 4 bytes
-		// Check to see if we still need to read more data
-		SUB r7, r7, 1 // subtract read counter
-		SUB r1, r1, 1 // subtract second read
-		SET r30.t11 // set byteswap high
-		DEL // delay for byteswap
-		QBNE READSINGLE, r1, 0 // loop to read both bytes
-		CLR r30.t11 //clear byteswap low
-		DEL
-		QBNE CAPTURELOOP, r7, 0 // loop if weve not finished
 
 CLEANUP:
-		SET r30.t11	// disable the data bus
-		// were done. Signal to the application
 		LED_OFF
 		MOV r1, 1
-		SBCO r1, CONST_PRUSHAREDRAM, 0, 4 // Put contents of r1 into shared RAM
+		SBCO r1, CONST_PRUSHAREDRAM, 0, 8 // Put contents of r1 into shared RAM
 		JMP EXIT // finished, Quit
 
 EXIT:

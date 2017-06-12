@@ -112,15 +112,12 @@ CMDLOOP:
 
 SETUP:
 		CLR r30.t11 // byteswap set to low
-		SET r30.t9 // cnvst set high
 		WBC r31.t10 // wait for busy to be low
 		DEL //delay before capture loop
 
 CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
 		UDEL
 		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
 		DEL //delay
 		MOV r1, 2 // repeat twice counter
 

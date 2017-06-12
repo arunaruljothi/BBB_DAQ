@@ -97,7 +97,7 @@ int main (void)
 {
     unsigned int ret;
     int i;
-		int count;
+		unsigned int count;
     void *DDR_paramaddr;
     void *DDR_ackaddr;
     int fin;
@@ -121,7 +121,7 @@ int main (void)
     prussdrv_pruintc_init(&pruss_intc_initdata);
 
     // Open file
-    //outfile=fopen("data.csv", "w"); // change back
+    outfile=fopen("data.csv", "w"); // change back
 
     /* Initialize example */
     printf("\tINFO: Initializing example.\r\n");
@@ -144,23 +144,18 @@ int main (void)
 		sleep(1);
 		printf("Executed: Waiting for ack (curr=%d). \n", sharedMem_int[OFFSET_SHAREDRAM]);
 		fin=0;
-		count = sharedMem_int[OFFSET_SHAREDRAM];
 		do
 		{
-			if (sharedMem_int[OFFSET_SHAREDRAM] != count){
-				printf("\nOutput number: =%d", sharedMem_int[OFFSET_SHAREDRAM]);
-				count = sharedMem_int[OFFSET_SHAREDRAM];
-			}
 			if ( sharedMem_int[OFFSET_SHAREDRAM] == 1 )
 			{
 				// we have received the ack!
-				//dumpdata(); // Store to file // change back
+				dumpdata(); // Store to file // change back
 				sharedMem_int[OFFSET_SHAREDRAM] = 0;
 				fin=1;
 				printf("Ack\n");
 			}
 			count++;
-			if (count > 50000000){
+			if (count > 500000000){
 				printf("Exeeded allowed limit\n" );
 				break;
 			}
@@ -174,7 +169,7 @@ int main (void)
 
 
 
-		//fclose(outfile); // change back
+		fclose(outfile); // change back
 
 
 

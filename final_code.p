@@ -51,7 +51,7 @@
 
 .macro UDEL
 UDEL:
-		MOV r14, 50 // byteswap delay
+		MOV r14, 5 // byteswap delay
 UDEL1:
 		SUB r14, r14, 1
 		QBNE UDEL1, r14, 0 // loop if weve not finished
@@ -59,7 +59,7 @@ UDEL1:
 
 .macro DEL
 DEL:
-		MOV r1, 500 // generic delay
+		MOV r1, 50 // generic delay
 DEL1:
 		SUB r1, r1, 1
 		QBNE DEL1, r1, 0 // loop if weve not finished
@@ -111,17 +111,17 @@ CMDLOOP:
 		LED_ON
 
 SETUP:
+    SET r30.t9 // set high cnvst
+		UDEL
+		CLR r30.t9 // set high cnvst
 		CLR r30.t11 // byteswap set to low
-		SET r30.t9 // cnvst set high
 		WBC r31.t10 // wait for busy to be low
 		DEL //delay before capture loop
 
 CAPTURELOOP:
-		CLR r30.t9 // set falling edge on cnvst
 		UDEL
 		WBC r31.t10 // wait for busy to be low
-		SET r30.t9 // set high cnvst
-		DEL //delay
+		UDEL //delay
 		MOV r1, 2 // repeat twice counter
 
 READSINGLE:
@@ -130,8 +130,8 @@ READSINGLE:
 		MOV r2, r31	// Read in the data (i.e. after 5nsec of clock rising edge)
 		//AND r1, r2, r4 // Were just interested in a portion of r31 (i.e. 8 bits)
 		// we can now write it to RAM (address in r6)
-		//SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
-		//ADD r6, r6, 4 // increment DDR address by 4 bytes
+		SBBO r2.b0, r6, 0, 1 // Put contents of r1 into the address at r6
+		ADD r6, r6, 4 // increment DDR address by 4 bytes
 		// Check to see if we still need to read more data
 		SUB r7, r7, 1 // subtract read counter
 		SUB r1, r1, 1 // subtract second read
